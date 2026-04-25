@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 class ContractorViewModel: ObservableObject {
     @Published var contractors: [Contractor] = []

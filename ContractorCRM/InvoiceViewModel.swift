@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 class InvoiceViewModel: ObservableObject {
     @Published var invoices: [Invoice] = []

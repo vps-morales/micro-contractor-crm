@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 class JobViewModel: ObservableObject {
     @Published var jobs: [Job] = []
