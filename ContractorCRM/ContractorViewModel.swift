@@ -1,10 +1,8 @@
 import Foundation
 
-@MainActor
 class ContractorViewModel: ObservableObject {
     @Published var contractors: [Contractor] = []
     @Published var isLoading = false
-    @Published var errorMessage: String?
 
     private let dataService: DataService
 

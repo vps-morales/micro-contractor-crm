@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 class InvoiceViewModel: ObservableObject {
     @Published var invoices: [Invoice] = []
     @Published var isLoading = false

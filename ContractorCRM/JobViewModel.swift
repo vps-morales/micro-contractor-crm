@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 class JobViewModel: ObservableObject {
     @Published var jobs: [Job] = []
     @Published var isLoading = false
