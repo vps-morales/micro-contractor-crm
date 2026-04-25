@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  ContractorCRM
-//
-//  Created by Tito on 4/24/26.
-//
-
 import SwiftUI
 
 struct ContentView: View {
@@ -44,25 +37,34 @@ struct ContractorsListView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(viewModel.contractors) { contractor in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(contractor.name).font(.headline)
-                        Text(contractor.specialty).font(.subheadline).foregroundColor(.gray)
-                        Text("$\(String(format: "%.2f", contractor.hourlyRate))/hr").font(.caption).foregroundColor(.blue)
+            ZStack {
+                Color(.systemGray6).ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    List {
+                        ForEach(viewModel.contractors) { contractor in
+                            ContractorCard(contractor: contractor)
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                        }
+                        .onDelete { offsets in
+                            for index in offsets {
+                                viewModel.deleteContractor(viewModel.contractors[index].id)
+                            }
+                        }
                     }
-                }
-                .onDelete { offsets in
-                    for index in offsets {
-                        viewModel.deleteContractor(viewModel.contractors[index].id)
-                    }
+                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Contractors")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showAddContractor = true }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -70,6 +72,64 @@ struct ContractorsListView: View {
                 AddContractorView(isPresented: $showAddContractor)
             }
         }
+    }
+}
+
+struct ContractorCard: View {
+    let contractor: Contractor
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(contractor.name)
+                        .font(.system(.headline, design: .default))
+                        .foregroundColor(.black)
+                    Text(contractor.specialty)
+                        .font(.system(.caption, design: .default))
+                        .foregroundColor(.gray)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("$\(String(format: "%.2f", contractor.hourlyRate))")
+                        .font(.system(.headline, design: .default))
+                        .foregroundColor(.blue)
+                    Text("per hour")
+                        .font(.system(.caption2, design: .default))
+                        .foregroundColor(.gray)
+                }
+            }
+
+            Divider()
+
+            HStack(spacing: 16) {
+                HStack(spacing: 4) {
+                    Image(systemName: "phone.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.blue)
+                    Text(contractor.phone)
+                        .font(.system(.caption, design: .default))
+                        .foregroundColor(.gray)
+                }
+
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Image(systemName: "envelope.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.blue)
+                    Text(contractor.email)
+                        .font(.system(.caption, design: .default))
+                        .foregroundColor(.gray)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
+        .padding(.vertical, 6)
+        .padding(.horizontal)
     }
 }
 
@@ -82,16 +142,33 @@ struct AddContractorView: View {
     @State private var specialty = ""
     @State private var hourlyRate = ""
 
+    var isValid: Bool {
+        !name.isEmpty && !email.isEmpty && !specialty.isEmpty && !hourlyRate.isEmpty
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                TextField("Name", text: $name)
-                TextField("Email", text: $email)
-                TextField("Phone", text: $phone)
-                TextField("Specialty", text: $specialty)
-                TextField("Hourly Rate", text: $hourlyRate).keyboardType(.decimalPad)
+            ZStack {
+                Color(.systemGray6).ignoresSafeArea()
+
+                Form {
+                    Section("Basic Information") {
+                        TextField("Full Name", text: $name)
+                        TextField("Email", text: $email)
+                            .keyboardType(.emailAddress)
+                        TextField("Phone", text: $phone)
+                            .keyboardType(.phonePad)
+                    }
+
+                    Section("Professional Details") {
+                        TextField("Specialty", text: $specialty)
+                        TextField("Hourly Rate ($)", text: $hourlyRate)
+                            .keyboardType(.decimalPad)
+                    }
+                }
             }
             .navigationTitle("Add Contractor")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { isPresented = false }
@@ -104,6 +181,8 @@ struct AddContractorView: View {
                             isPresented = false
                         }
                     }
+                    .disabled(!isValid)
+                    .fontWeight(.semibold)
                 }
             }
         }
@@ -117,24 +196,32 @@ struct JobsListView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(jobViewModel.jobs) { job in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(job.title).font(.headline)
-                        Text(job.status.rawValue).font(.caption).foregroundColor(.gray)
+            ZStack {
+                Color(.systemGray6).ignoresSafeArea()
+
+                List {
+                    ForEach(jobViewModel.jobs) { job in
+                        JobCard(job: job, contractor: contractorViewModel.getContractor(by: job.contractorId))
+                            .listRowInsets(EdgeInsets())
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                    .onDelete { offsets in
+                        for index in offsets {
+                            jobViewModel.deleteJob(jobViewModel.jobs[index].id)
+                        }
                     }
                 }
-                .onDelete { offsets in
-                    for index in offsets {
-                        jobViewModel.deleteJob(jobViewModel.jobs[index].id)
-                    }
-                }
+                .listStyle(.plain)
             }
             .navigationTitle("Jobs")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showAddJob = true }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -142,6 +229,69 @@ struct JobsListView: View {
                 AddJobView(isPresented: $showAddJob)
             }
         }
+    }
+}
+
+struct JobCard: View {
+    let job: Job
+    let contractor: Contractor?
+
+    var statusColor: Color {
+        switch job.status {
+        case .pending: return Color(.systemOrange)
+        case .inProgress: return Color(.systemBlue)
+        case .completed: return Color(.systemGreen)
+        case .cancelled: return Color(.systemRed)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(job.title)
+                        .font(.system(.headline, design: .default))
+                        .foregroundColor(.black)
+                    if let contractor = contractor {
+                        Text(contractor.name)
+                            .font(.system(.caption, design: .default))
+                            .foregroundColor(.gray)
+                    }
+                }
+                Spacer()
+                Label(job.status.rawValue, systemImage: "circle.fill")
+                    .font(.system(.caption, design: .default))
+                    .foregroundColor(statusColor)
+            }
+
+            Divider()
+
+            HStack(spacing: 16) {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.blue)
+                    Text("\(String(format: "%.1f", job.estimatedHours))h")
+                        .font(.system(.caption, design: .default))
+                        .foregroundColor(.gray)
+                }
+
+                Spacer()
+
+                if let contractor = contractor {
+                    Text("$\(String(format: "%.2f", job.estimatedHours * contractor.hourlyRate))")
+                        .font(.system(.caption, design: .default))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.blue)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
+        .padding(.vertical, 6)
+        .padding(.horizontal)
     }
 }
 
@@ -154,24 +304,38 @@ struct AddJobView: View {
     @State private var description = ""
     @State private var estimatedHours = ""
 
+    var isValid: Bool {
+        selectedContractor != nil && !title.isEmpty && !estimatedHours.isEmpty
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Contractor") {
-                    Picker("Select Contractor", selection: $selectedContractor) {
-                        Text("None").tag(nil as Contractor?)
-                        ForEach(contractorViewModel.contractors) { contractor in
-                            Text(contractor.name).tag(contractor as Contractor?)
+            ZStack {
+                Color(.systemGray6).ignoresSafeArea()
+
+                Form {
+                    Section("Contractor") {
+                        Picker("Select Contractor", selection: $selectedContractor) {
+                            Text("None").tag(nil as Contractor?)
+                            ForEach(contractorViewModel.contractors) { contractor in
+                                Text(contractor.name).tag(contractor as Contractor?)
+                            }
                         }
                     }
-                }
-                Section("Job Details") {
-                    TextField("Title", text: $title)
-                    TextField("Description", text: $description)
-                    TextField("Est. Hours", text: $estimatedHours).keyboardType(.decimalPad)
+
+                    Section("Job Details") {
+                        TextField("Job Title", text: $title)
+                        TextField("Description", text: $description)
+                    }
+
+                    Section("Estimate") {
+                        TextField("Estimated Hours", text: $estimatedHours)
+                            .keyboardType(.decimalPad)
+                    }
                 }
             }
             .navigationTitle("Add Job")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { isPresented = false }
@@ -184,6 +348,8 @@ struct AddJobView: View {
                             isPresented = false
                         }
                     }
+                    .disabled(!isValid)
+                    .fontWeight(.semibold)
                 }
             }
         }
@@ -197,24 +363,32 @@ struct InvoicesListView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(invoiceViewModel.invoices) { invoice in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(invoice.invoiceNumber).font(.headline)
-                        Text("$\(String(format: "%.2f", invoice.amount))").font(.subheadline).foregroundColor(.blue)
+            ZStack {
+                Color(.systemGray6).ignoresSafeArea()
+
+                List {
+                    ForEach(invoiceViewModel.invoices) { invoice in
+                        InvoiceCard(invoice: invoice, contractor: contractorViewModel.getContractor(by: invoice.contractorId))
+                            .listRowInsets(EdgeInsets())
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                    .onDelete { offsets in
+                        for index in offsets {
+                            invoiceViewModel.deleteInvoice(invoiceViewModel.invoices[index].id)
+                        }
                     }
                 }
-                .onDelete { offsets in
-                    for index in offsets {
-                        invoiceViewModel.deleteInvoice(invoiceViewModel.invoices[index].id)
-                    }
-                }
+                .listStyle(.plain)
             }
             .navigationTitle("Invoices")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showAddInvoice = true }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.blue)
                     }
                 }
             }
@@ -222,6 +396,63 @@ struct InvoicesListView: View {
                 AddInvoiceView(isPresented: $showAddInvoice)
             }
         }
+    }
+}
+
+struct InvoiceCard: View {
+    let invoice: Invoice
+    let contractor: Contractor?
+
+    var statusColor: Color {
+        switch invoice.paymentStatus {
+        case .draft: return Color(.systemGray)
+        case .sent: return Color(.systemBlue)
+        case .paid: return Color(.systemGreen)
+        case .overdue: return Color(.systemRed)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(invoice.invoiceNumber)
+                        .font(.system(.headline, design: .default))
+                        .foregroundColor(.black)
+                    if let contractor = contractor {
+                        Text(contractor.name)
+                            .font(.system(.caption, design: .default))
+                            .foregroundColor(.gray)
+                    }
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("$\(String(format: "%.2f", invoice.amount))")
+                        .font(.system(.headline, design: .default))
+                        .foregroundColor(.blue)
+                }
+            }
+
+            Divider()
+
+            HStack(spacing: 16) {
+                Label(invoice.paymentStatus.rawValue, systemImage: "circle.fill")
+                    .font(.system(.caption, design: .default))
+                    .foregroundColor(statusColor)
+
+                Spacer()
+
+                Text("Due: \(invoice.dueDate.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.system(.caption, design: .default))
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
+        .padding(.vertical, 6)
+        .padding(.horizontal)
     }
 }
 
@@ -233,23 +464,34 @@ struct AddInvoiceView: View {
     @State private var invoiceNumber = ""
     @State private var amount = ""
 
+    var isValid: Bool {
+        selectedContractor != nil && !invoiceNumber.isEmpty && !amount.isEmpty
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Contractor") {
-                    Picker("Select Contractor", selection: $selectedContractor) {
-                        Text("None").tag(nil as Contractor?)
-                        ForEach(contractorViewModel.contractors) { contractor in
-                            Text(contractor.name).tag(contractor as Contractor?)
+            ZStack {
+                Color(.systemGray6).ignoresSafeArea()
+
+                Form {
+                    Section("Contractor") {
+                        Picker("Select Contractor", selection: $selectedContractor) {
+                            Text("None").tag(nil as Contractor?)
+                            ForEach(contractorViewModel.contractors) { contractor in
+                                Text(contractor.name).tag(contractor as Contractor?)
+                            }
                         }
                     }
-                }
-                Section("Invoice Details") {
-                    TextField("Invoice Number", text: $invoiceNumber)
-                    TextField("Amount ($)", text: $amount).keyboardType(.decimalPad)
+
+                    Section("Invoice Details") {
+                        TextField("Invoice Number", text: $invoiceNumber)
+                        TextField("Amount ($)", text: $amount)
+                            .keyboardType(.decimalPad)
+                    }
                 }
             }
             .navigationTitle("Add Invoice")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { isPresented = false }
@@ -262,6 +504,8 @@ struct AddInvoiceView: View {
                             isPresented = false
                         }
                     }
+                    .disabled(!isValid)
+                    .fontWeight(.semibold)
                 }
             }
         }
@@ -273,35 +517,116 @@ struct DashboardView: View {
     @EnvironmentObject var jobViewModel: JobViewModel
     @EnvironmentObject var invoiceViewModel: InvoiceViewModel
 
+    var activeJobs: [Job] {
+        jobViewModel.jobs.filter { $0.status == .inProgress }
+    }
+
+    var totalRevenue: Double {
+        invoiceViewModel.invoices
+            .filter { $0.paymentStatus == .paid }
+            .reduce(0) { $0 + $1.amount }
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                Text("Dashboard").font(.title).fontWeight(.bold)
-                HStack {
-                    StatCard(label: "Contractors", value: String(contractorViewModel.contractors.count))
-                    StatCard(label: "Jobs", value: String(jobViewModel.jobs.count))
-                    StatCard(label: "Invoices", value: String(invoiceViewModel.invoices.count))
+        NavigationStack {
+            ZStack {
+                Color(.systemGray6).ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 16) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Dashboard")
+                                    .font(.system(.title2, design: .default))
+                                    .fontWeight(.bold)
+                                Text("Overview & Analytics")
+                                    .font(.system(.caption, design: .default))
+                                    .foregroundColor(.gray)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .padding(.top)
+
+                        VStack(spacing: 12) {
+                            HStack(spacing: 12) {
+                                DashboardStatCard(
+                                    icon: "person.2.fill",
+                                    label: "Contractors",
+                                    value: String(contractorViewModel.contractors.count),
+                                    color: .blue
+                                )
+
+                                DashboardStatCard(
+                                    icon: "briefcase.fill",
+                                    label: "Active Jobs",
+                                    value: String(activeJobs.count),
+                                    color: .orange
+                                )
+                            }
+
+                            HStack(spacing: 12) {
+                                DashboardStatCard(
+                                    icon: "doc.fill",
+                                    label: "Total Invoices",
+                                    value: String(invoiceViewModel.invoices.count),
+                                    color: .purple
+                                )
+
+                                DashboardStatCard(
+                                    icon: "dollarsign.circle.fill",
+                                    label: "Total Revenue",
+                                    value: "$\(String(format: "%.0f", totalRevenue))",
+                                    color: .green
+                                )
+                            }
+                        }
+                        .padding(.horizontal)
+
+                        Spacer()
+                    }
                 }
-                Spacer()
             }
-            .padding()
+            .navigationTitle("Dashboard")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
 
-struct StatCard: View {
+struct DashboardStatCard: View {
+    let icon: String
     let label: String
     let value: String
+    let color: Color
 
     var body: some View {
-        VStack(spacing: 8) {
-            Text(value).font(.title3).fontWeight(.bold)
-            Text(label).font(.caption).foregroundColor(.gray)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(color)
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(value)
+                    .font(.system(.title3, design: .default))
+                    .fontWeight(.bold)
+                    .foregroundColor(.black)
+
+                Text(label)
+                    .font(.system(.caption, design: .default))
+                    .foregroundColor(.gray)
+            }
+
+            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 120)
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
     }
 }
 
