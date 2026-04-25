@@ -112,6 +112,7 @@ struct AddContractorView: View {
 
 struct JobsListView: View {
     @EnvironmentObject var jobViewModel: JobViewModel
+    @EnvironmentObject var contractorViewModel: ContractorViewModel
     @State private var showAddJob = false
 
     var body: some View {
@@ -137,12 +138,61 @@ struct JobsListView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showAddJob) {
+                AddJobView(isPresented: $showAddJob)
+            }
+        }
+    }
+}
+
+struct AddJobView: View {
+    @EnvironmentObject var jobViewModel: JobViewModel
+    @EnvironmentObject var contractorViewModel: ContractorViewModel
+    @Binding var isPresented: Bool
+    @State private var selectedContractor: Contractor?
+    @State private var title = ""
+    @State private var description = ""
+    @State private var estimatedHours = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Contractor") {
+                    Picker("Select Contractor", selection: $selectedContractor) {
+                        Text("None").tag(nil as Contractor?)
+                        ForEach(contractorViewModel.contractors) { contractor in
+                            Text(contractor.name).tag(contractor as Contractor?)
+                        }
+                    }
+                }
+                Section("Job Details") {
+                    TextField("Title", text: $title)
+                    TextField("Description", text: $description)
+                    TextField("Est. Hours", text: $estimatedHours).keyboardType(.decimalPad)
+                }
+            }
+            .navigationTitle("Add Job")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { isPresented = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        if let contractor = selectedContractor, let hours = Double(estimatedHours) {
+                            let job = Job(contractorId: contractor.id, title: title, description: description, estimatedHours: hours)
+                            jobViewModel.addJob(job)
+                            isPresented = false
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 struct InvoicesListView: View {
     @EnvironmentObject var invoiceViewModel: InvoiceViewModel
+    @EnvironmentObject var contractorViewModel: ContractorViewModel
     @State private var showAddInvoice = false
 
     var body: some View {
@@ -165,6 +215,52 @@ struct InvoicesListView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showAddInvoice = true }) {
                         Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showAddInvoice) {
+                AddInvoiceView(isPresented: $showAddInvoice)
+            }
+        }
+    }
+}
+
+struct AddInvoiceView: View {
+    @EnvironmentObject var invoiceViewModel: InvoiceViewModel
+    @EnvironmentObject var contractorViewModel: ContractorViewModel
+    @Binding var isPresented: Bool
+    @State private var selectedContractor: Contractor?
+    @State private var invoiceNumber = ""
+    @State private var amount = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Contractor") {
+                    Picker("Select Contractor", selection: $selectedContractor) {
+                        Text("None").tag(nil as Contractor?)
+                        ForEach(contractorViewModel.contractors) { contractor in
+                            Text(contractor.name).tag(contractor as Contractor?)
+                        }
+                    }
+                }
+                Section("Invoice Details") {
+                    TextField("Invoice Number", text: $invoiceNumber)
+                    TextField("Amount ($)", text: $amount).keyboardType(.decimalPad)
+                }
+            }
+            .navigationTitle("Add Invoice")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { isPresented = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        if let contractor = selectedContractor, let amt = Double(amount) {
+                            let invoice = Invoice(contractorId: contractor.id, jobIds: [], invoiceNumber: invoiceNumber, amount: amt)
+                            invoiceViewModel.addInvoice(invoice)
+                            isPresented = false
+                        }
                     }
                 }
             }
